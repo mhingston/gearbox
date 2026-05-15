@@ -1,0 +1,53 @@
+{
+  "name": "gearbox",
+  "version": "0.1.0",
+  "description": "AI agent harness bootstrap for any repo",
+  "type": "module",
+  "bin": {
+    "gearbox": "bin/gearbox.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mhingston/gearbox.git"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "harness",
+    "copilot",
+    "claude",
+    "codex",
+    "gemini",
+    "opencode",
+    "skills",
+    "hooks",
+    "bootstrap"
+  ],
+  "author": "Mark Hingston",
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20.12.1"
+  },
+  "scripts": {
+    "test": "node run-tests.mjs",
+    "lint": "node --check src/**/*.mjs bin/**/*.mjs",
+    "gearbox:health": "node .gearbox/scripts/harness-audit.mjs health",
+    "gearbox:audit": "node .gearbox/scripts/harness-audit.mjs preflight",
+    "gearbox:check-docs": "node .gearbox/scripts/docs-drift-check.mjs"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.0",
+    "picocolors": "^1.1.0",
+    "fs-extra": "^11.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  },
+  "license": "MIT"
+}

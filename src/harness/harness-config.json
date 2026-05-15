@@ -1,0 +1,83 @@
+{
+  "$schema_version": "1.0.0",
+  "node": {
+    "min_version": "20.12.1"
+  },
+  "pipeline": {
+    "max_nodes": 9
+  },
+  "audit": {
+    "rubric_version": "2026-04-06",
+    "max_prime_bytes": 4096,
+    "health_min_runs": 3,
+    "weight_ceiling": {
+      "express": {
+        "skill_bytes": 50000,
+        "instruction_lines": 500,
+        "estimated_tokens": 12500
+      },
+      "standard": {
+        "skill_bytes": 100000,
+        "instruction_lines": 1000,
+        "estimated_tokens": 25000
+      },
+      "full": {
+        "skill_bytes": 200000,
+        "instruction_lines": 2000,
+        "estimated_tokens": 50000
+      }
+    },
+    "required_hook_events": [
+      "sessionStart",
+      "userPromptSubmitted",
+      "preToolUse",
+      "postToolUse",
+      "errorOccurred",
+      "sessionEnd"
+    ]
+  },
+  "readiness": {
+    "autonomous_min_score": 7,
+    "gated_min_score": 5,
+    "blocked_below_score": 5
+  },
+  "model_routing": {
+    "tiers": {
+      "flagship": "gpt-5.4",
+      "standard": "claude-sonnet-4.6",
+      "fast": "claude-haiku-4.5"
+    },
+    "reasoning_effort": {
+      "flagship": "xhigh",
+      "standard": "high",
+      "fast": "medium"
+    },
+    "capabilities": {
+      "deep_reasoning": {
+        "model": "gpt-5.4",
+        "reasoning_effort": "xhigh",
+        "aliases": ["flagship"]
+      },
+      "execution": {
+        "model": "claude-sonnet-4.6",
+        "reasoning_effort": "high",
+        "aliases": ["standard"]
+      },
+      "fast_deterministic": {
+        "model": "claude-haiku-4.5",
+        "reasoning_effort": "medium",
+        "aliases": ["fast"]
+      }
+    }
+  },
+  "budget": {
+    "default_ticket_usd": 5,
+    "warn_fraction": 0.7,
+    "critical_fraction": 0.95
+  },
+  "hooks": {
+    "packet_scope_guard": {
+      "mode": "warn"
+    }
+  }
+}

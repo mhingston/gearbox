@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "type": "command", "bash": "node .gearbox/hooks/self-learning.mjs sessionStart", "powershell": "node .gearbox/hooks/self-learning.mjs sessionStart", "cwd": ".", "timeoutSec": 10 }
+    ],
+    "userPromptSubmitted": [
+      { "type": "command", "bash": "node .gearbox/hooks/self-learning.mjs userPromptSubmitted", "powershell": "node .gearbox/hooks/self-learning.mjs userPromptSubmitted", "cwd": ".", "timeoutSec": 5 }
+    ],
+    "preToolUse": [
+      { "type": "command", "bash": ".gearbox/hooks/gitleaks-check.sh", "powershell": ".gearbox/hooks/gitleaks-check.ps1", "comment": "Scan content for secrets before writing to disk", "timeoutSec": 30 },
+      { "type": "command", "bash": "node .gearbox/hooks/policy-guard.mjs", "powershell": "node .gearbox/hooks/policy-guard.mjs", "comment": "Warn when policy gates appear to be skipped", "timeoutSec": 5 }
+    ],
+    "postToolUse": [
+      { "type": "command", "bash": "PAYLOAD=$(cat); echo \"$PAYLOAD\" | node .gearbox/hooks/self-learning.mjs postToolUse & disown $!", "powershell": "$payload = [Console]::In.ReadToEnd(); $cwd = (Get-Location).Path; $temp = [System.IO.Path]::GetTempFileName(); Set-Content -Path $temp -Value $payload -NoNewline -Encoding utf8; if ($IsWindows) { Start-Process -FilePath node -WorkingDirectory $cwd -ArgumentList '.gearbox/hooks/self-learning.mjs', 'postToolUse', '--payload-file', $temp -WindowStyle Hidden } else { Start-Process -FilePath node -WorkingDirectory $cwd -ArgumentList '.gearbox/hooks/self-learning.mjs', 'postToolUse', '--payload-file', $temp }", "cwd": ".", "timeoutSec": 2 }
+    ],
+    "errorOccurred": [
+      { "type": "command", "bash": "PAYLOAD=$(cat); echo \"$PAYLOAD\" | node .gearbox/hooks/self-learning.mjs errorOccurred & disown $!", "powershell": "$payload = [Console]::In.ReadToEnd(); $cwd = (Get-Location).Path; $temp = [System.IO.Path]::GetTempFileName(); Set-Content -Path $temp -Value $payload -NoNewline -Encoding utf8; if ($IsWindows) { Start-Process -FilePath node -WorkingDirectory $cwd -ArgumentList '.gearbox/hooks/self-learning.mjs', 'errorOccurred', '--payload-file', $temp -WindowStyle Hidden } else { Start-Process -FilePath node -WorkingDirectory $cwd -ArgumentList '.gearbox/hooks/self-learning.mjs', 'errorOccurred', '--payload-file', $temp }", "cwd": ".", "timeoutSec": 2 }
+    ],
+    "preCompact": [
+      { "type": "command", "bash": "node .gearbox/hooks/context-compact.mjs", "powershell": "node .gearbox/hooks/context-compact.mjs", "cwd": ".", "timeoutSec": 5, "comment": "Write structured context block before compaction" }
+    ],
+    "sessionEnd": [
+      { "type": "command", "bash": "node .gearbox/hooks/self-learning.mjs sessionEnd", "powershell": "node .gearbox/hooks/self-learning.mjs sessionEnd", "cwd": ".", "timeoutSec": 15 }
+    ]
+  }
+}
