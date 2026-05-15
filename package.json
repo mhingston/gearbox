@@ -1,5 +1,5 @@
 {
-  "name": "gearbox",
+  "name": "@mhingston5/gearbox",
   "version": "0.1.0",
   "description": "AI agent harness bootstrap for any repo",
   "type": "module",
