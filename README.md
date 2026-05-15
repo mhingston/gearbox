@@ -3,7 +3,7 @@
 > `npx`-bootstrappable AI agent harness packager. Installs a self-improving AI agent harness into any repo.
 
 ```sh
-npx gearbox
+npx @mhingston5/gearbox
 ```
 
 The core value is a **session eval flywheel** — hook scripts capture what happens during every AI coding session, feed learnings back into the agent's instructions (`AGENTS.md`), and the agent gradually gets better at your specific repo over time. No cloud service, no subscription — just files checked into your repo.
@@ -25,12 +25,12 @@ The core value is a **session eval flywheel** — hook scripts capture what happ
 ## Installation
 
 ```sh
-npx gearbox                                    # Interactive wizard (recommended)
-npx gearbox --yes                              # Non-interactive — accept all defaults
-npx gearbox --dry-run                          # Preview files that would be written, no changes
-npx gearbox --platforms copilot,claude         # Select specific platforms
-npx gearbox --skills-dir .agents/skills        # Set custom skills directory (default: .agents/skills)
-npx gearbox --help                             # Show all options
+npx @mhingston5/gearbox                                    # Interactive wizard (recommended)
+npx @mhingston5/gearbox --yes                              # Non-interactive — accept all defaults
+npx @mhingston5/gearbox --dry-run                          # Preview files that would be written, no changes
+npx @mhingston5/gearbox --platforms copilot,claude         # Select specific platforms
+npx @mhingston5/gearbox --skills-dir .agents/skills        # Set custom skills directory (default: .agents/skills)
+npx @mhingston5/gearbox --help                             # Show all options
 ```
 
 The wizard asks which platforms you use and where to put skills, then writes everything in one shot.
