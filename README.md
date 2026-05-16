@@ -42,9 +42,11 @@ The wizard asks which platforms you use and where to put skills, then writes eve
    npm run gearbox:health
    ```
 
-2. **Commit the generated files** — everything under `.gearbox/`, `.agents/skills/`, `AGENTS.md`, and platform config files belongs in version control:
+2. **Commit the generated files** — everything under `.gearbox/`, `.agents/skills/`, `AGENTS.md`, platform config files, and any generated symlinks belongs in version control:
    ```sh
    git add .gearbox/ AGENTS.md .github/copilot/ .claude/ .agents/
+   git add CLAUDE.md .github/copilot-instructions.md GEMINI.md  # if present
+   git add .claude/skills/ .github/skills/  # if present
    git commit -m "chore: install gearbox agent harness"
    ```
 
@@ -82,6 +84,7 @@ These run at key moments during AI coding sessions. Each platform maps its nativ
 | `convention-drift-gate.mjs` | Enforces coding conventions; runs as a post-merge CI gate |
 | `event-log.mjs` | Append-only structured event log used by hooks for session tracing |
 | `harness-config.mjs` | Reads `harness-config.json`; single source of truth for retry limits, budget settings, and hook tuning |
+| `sync-agent-config.mjs` | Manages cross-platform symlinks (CLAUDE.md, GEMINI.md, skills dirs) for instruction compatibility |
 
 ### `{skillsDir}/` — 33 portable skills
 

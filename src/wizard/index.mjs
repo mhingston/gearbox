@@ -1,4 +1,5 @@
 import { intro, outro, multiselect, confirm, select, spinner, isCancel, cancel } from '@clack/prompts';
+import { execFileSync } from 'node:child_process';
 import pc from 'picocolors';
 import path from 'node:path';
 
@@ -11,6 +12,7 @@ import { installWorkflows } from './steps/install-workflows.mjs';
 import { installAdapters } from './steps/install-adapters.mjs';
 import { generateAgentsMd } from './steps/generate-agents-md.mjs';
 import { updatePackageJson } from './steps/update-package-json.mjs';
+
 
 function collectAll(results) {
   const written = [];
@@ -111,6 +113,22 @@ export async function runWizard({
     {
       label: 'Configuring platform adapters',
       fn: () => installAdapters({ cwd, platforms: chosenPlatforms, dryRun }),
+    },
+    {
+      label: 'Syncing instruction files and skills',
+      fn: async () => {
+        const hasSymlinkPlatforms = chosenPlatforms.some((p) => ['claude', 'copilot', 'gemini'].includes(p));
+        if (!hasSymlinkPlatforms) return {};
+        const script = path.join(cwd, '.gearbox', 'scripts', 'sync-agent-config.mjs');
+        const args = ['apply', '--platforms', chosenPlatforms.join(','), '--yes'];
+        if (dryRun) args.push('--dry-run');
+        try {
+          execFileSync(process.execPath, [script, ...args], { cwd, stdio: 'pipe' });
+        } catch {
+          // sync script handles errors internally; non-zero exit means a prompt was skipped
+        }
+        return {};
+      },
     },
     {
       label: 'Generating AGENTS.md',

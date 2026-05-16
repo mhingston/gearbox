@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1 — Cross-platform config sync
+
+### Added
+- `sync-agent-config.mjs` — manages instruction file and skills directory symlinks across platforms
+- Wizard now calls sync script after installing platform adapters
+- `--yes` flag on sync script for non-interactive wizard mode
+
+### Fixed
+- Removed `.cursorrules` symlink (Cursor not a supported platform)
+- Removed stale Cross-platform agent config section from AGENTS.md
+
 ## 0.1.0 — Initial release
 
 ### Added
