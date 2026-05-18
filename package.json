@@ -1,6 +1,6 @@
 {
   "name": "@mhingston5/gearbox",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "AI agent harness bootstrap for any repo",
   "type": "module",
   "bin": {
@@ -10,6 +10,10 @@
     "type": "git",
     "url": "https://github.com/mhingston/gearbox.git"
   },
+  "bugs": {
+    "url": "https://github.com/mhingston/gearbox/issues"
+  },
+  "homepage": "https://github.com/mhingston/gearbox#readme",
   "keywords": [
     "ai",
     "agent",
