@@ -3,6 +3,18 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const GEARBOX_SECTION_HEADING = '## Gearbox harness';
+const GEARBOX_SECTION_BODY = `## Gearbox harness
+
+This repo uses [gearbox](https://github.com/mark-hingston/gearbox) for AI agent harness setup.
+Run \`node .gearbox/scripts/harness-audit.mjs health\` to check harness health.
+
+Durable memory lives in:
+
+- \`AGENTS.md\` — top-level repo guardrails and conventions
+- [durable learning guide](docs/agents/learning-guide.md) — where new lessons should go
+- [decisions log](.github/agents/decisions.md) — long-lived decisions and invariants
+- [user directives](.github/agents/user-directives.md) — explicit user preferences to honour
+`;
 
 function buildStub(projectName) {
   return `# ${projectName} — Agent Instructions
@@ -11,23 +23,13 @@ function buildStub(projectName) {
 
 TODO: Describe your project here.
 
-## Gearbox harness
-
-This repo uses [gearbox](https://github.com/mark-hingston/gearbox) for AI agent harness setup.
-Run \`node .gearbox/scripts/harness-audit.mjs health\` to check harness health.
+${GEARBOX_SECTION_BODY}
 
 ## Architecture guardrails
 
 TODO: Add your conventions here.
 `;
 }
-
-const GEARBOX_APPEND = `
-## Gearbox harness
-
-This repo uses [gearbox](https://github.com/mark-hingston/gearbox) for AI agent harness setup.
-Run \`node .gearbox/scripts/harness-audit.mjs health\` to check harness health.
-`;
 
 /**
  * Write or append an AGENTS.md file in the project root.
@@ -57,7 +59,7 @@ export async function generateAgentsMd({
   }
 
   if (!dryRun) {
-    await appendFile(agentsPath, GEARBOX_APPEND, 'utf8');
+    await appendFile(agentsPath, `\n${GEARBOX_SECTION_BODY}`, 'utf8');
   }
   return { written: [relPath], skipped: [] };
 }

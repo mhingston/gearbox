@@ -32,6 +32,10 @@ function compactContextPathFor(root) {
   return path.join(repoRuntimeDirFor(root), 'compact-context.txt');
 }
 
+function currentCheckpointPathFor(root) {
+  return path.join(repoRuntimeDirFor(root), 'current-checkpoint.json');
+}
+
 function normalizeHookId(value) {
   return String(value ?? '')
     .trim()
@@ -183,6 +187,7 @@ export function collectCompactionSnapshot(rootInput = process.cwd(), options = {
   const root = path.resolve(rootInput);
   const sessionState = options.sessionState ?? readOptionalJson(currentSessionPathFor(root));
   const sessionEvents = options.sessionEvents ?? (sessionState?.logPath ? readOptionalJsonLines(sessionState.logPath) : []);
+  const checkpoint = options.checkpoint ?? readOptionalJson(currentCheckpointPathFor(root));
   const runtimeArtifacts = readRuntimeArtifactsForSession(root, sessionState?.sessionId ?? null);
   const modifiedFilesArtifact = options.modifiedFilesArtifact ?? runtimeArtifacts.modifiedFiles;
   const lastTestResult = options.lastTestResult ?? runtimeArtifacts.lastTestResult;
@@ -193,9 +198,32 @@ export function collectCompactionSnapshot(rootInput = process.cwd(), options = {
 
   return {
     sessionId: sessionState?.sessionId ?? null,
+    currentGoal: resolveCurrentGoal(sessionEvents, checkpoint),
     recentFiles: trackedModifiedFiles.length > 0 ? trackedModifiedFiles : extractRecentFiles(sessionEvents, root),
     lastTestResult,
   };
+}
+
+function resolveCurrentGoal(sessionEvents, checkpoint) {
+  if (typeof checkpoint?.goal === 'string' && checkpoint.goal.trim()) {
+    return checkpoint.goal.trim();
+  }
+
+  const promptEvent = [...sessionEvents].reverse().find((event) =>
+    event?.event === 'userPromptSubmitted' && typeof event?.details?.prompt === 'string'
+  );
+  if (promptEvent?.details?.prompt?.trim()) {
+    return promptEvent.details.prompt.trim();
+  }
+
+  const sessionStart = sessionEvents.find((event) =>
+    event?.event === 'sessionStart' && typeof event?.details?.initialPrompt === 'string'
+  );
+  if (sessionStart?.details?.initialPrompt?.trim()) {
+    return sessionStart.details.initialPrompt.trim();
+  }
+
+  return null;
 }
 
 export function buildCompactContext(snapshot) {
@@ -211,6 +239,14 @@ export function buildCompactContext(snapshot) {
     }
   } else {
     lines.push('- No recent file paths captured');
+  }
+
+  lines.push('', '## Current Goal');
+
+  if (snapshot.currentGoal) {
+    lines.push(`- ${snapshot.currentGoal}`);
+  } else {
+    lines.push('- No active goal captured');
   }
 
   lines.push('', '## Latest Validation Result');

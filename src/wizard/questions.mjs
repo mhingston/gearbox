@@ -27,9 +27,7 @@ export const SKILLS_DIR_CHOICES = [
 ];
 
 export const DEFAULTS = {
-  platforms:        ['copilot'],
-  workflows:        ['pr-retrospective', 'convention-drift'],
-  skillsDir:        '.agents/skills',
-  selfImprovement:  true,
-  secretScanning:   true,
+  platforms: ['copilot'],
+  workflows: ['pr-retrospective', 'convention-drift'],
+  skillsDir: '.agents/skills',
 };

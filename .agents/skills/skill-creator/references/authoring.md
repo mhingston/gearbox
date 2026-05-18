@@ -71,7 +71,7 @@ For output contracts, give the model a clear skeleton instead of a paragraph of 
 - Add a `tests/skills/tasks.jsonl` entry when a new skill needs task-manifest coverage.
 - Keep `expected_output_markers` stable once tests rely on them.
 - If the skill ships JavaScript helpers, add focused runtime tests near the shipped code.
-- Re-run `validate-skill.mjs` after every material edit.
+- Re-run `node .gearbox/scripts/validate-skill.mjs <path-to-SKILL.md>` after every material edit.
 
 ## Safety and Verification
 

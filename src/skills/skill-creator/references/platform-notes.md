@@ -7,8 +7,11 @@ Use this reference when the environment changes how the workflow can run.
 If the user wants an exportable skill bundle, package it after validation:
 
 ```bash
-node utilities/scripts/skills/run-python.mjs --cwd .agents/skills/skill-creator   --module scripts.package_skill   <path/to/skill-folder>
+cd .agents/skills/skill-creator && python -m scripts.package_skill <path/to/skill-folder>
 ```
+
+Use whatever Python launcher is standard in the repo (`python`, `python3`, or
+`py`).
 
 If the environment has a presentation tool, offer the packaged artifact. Otherwise, return the output path.
 

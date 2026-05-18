@@ -29,7 +29,7 @@ memory files.
 ### Steps
 
 1. Read the consolidation prompt from
-   `.github/hooks/prompts/consolidate-memory.md`
+   `.gearbox/hooks/prompts/consolidate-memory.md`
 2. Apply the prompt's instructions directly in this workflow run. Treat the
    prompt file as the operating instructions for the pass rather than spawning
    a second agent process.

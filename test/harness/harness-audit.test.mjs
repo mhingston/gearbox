@@ -43,12 +43,15 @@ describe('harness-audit', () => {
       await mkdir(hooksDir, { recursive: true });
       const hookFiles = [
         'self-learning.mjs',
+        'markdown-eval.mjs',
         'policy-guard.mjs',
         'context-compact.mjs',
         'event-log.mjs',
         'session-checkpoint.mjs',
+        path.join('prompts', 'consolidate-memory.md'),
       ];
       for (const file of hookFiles) {
+        await mkdir(path.dirname(path.join(hooksDir, file)), { recursive: true });
         await writeFile(path.join(hooksDir, file), '// hook');
       }
       const result = await runHealthCheck(path.join(tmpDir, 'hooks-full'));

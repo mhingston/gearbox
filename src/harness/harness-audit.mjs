@@ -21,10 +21,12 @@ const MIN_NODE_VERSION = '20.12.1';
 
 const REQUIRED_HOOK_FILES = [
   'self-learning.mjs',
+  'markdown-eval.mjs',
   'policy-guard.mjs',
   'context-compact.mjs',
   'event-log.mjs',
   'session-checkpoint.mjs',
+  path.join('prompts', 'consolidate-memory.md'),
 ];
 
 const ADAPTER_PATHS = [

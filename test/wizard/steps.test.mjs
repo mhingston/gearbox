@@ -10,6 +10,7 @@ import { installHarness } from '../../src/wizard/steps/install-harness.mjs';
 import { installSkills } from '../../src/wizard/steps/install-skills.mjs';
 import { installWorkflows } from '../../src/wizard/steps/install-workflows.mjs';
 import { installAdapters } from '../../src/wizard/steps/install-adapters.mjs';
+import { installMemoryContract } from '../../src/wizard/steps/install-memory-contract.mjs';
 import { generateAgentsMd } from '../../src/wizard/steps/generate-agents-md.mjs';
 import { updatePackageJson } from '../../src/wizard/steps/update-package-json.mjs';
 
@@ -27,6 +28,8 @@ describe('wizard step: installHooks', () => {
     const { written, skipped } = await installHooks({ cwd: tmpDir, dryRun: true });
     assert.ok(written.length > 0, 'Expected some paths in written');
     assert.ok(written.every(p => p.startsWith('.gearbox/hooks/')), 'All paths should be under .gearbox/hooks/');
+    assert.ok(written.includes(path.join('.gearbox', 'hooks', 'markdown-eval.mjs')));
+    assert.ok(written.includes(path.join('.gearbox', 'hooks', 'prompts', 'consolidate-memory.md')));
     // No files should be created
     assert.equal(existsSync(path.join(tmpDir, '.gearbox')), false, 'Should not create directory in dry-run');
   });
@@ -37,6 +40,14 @@ describe('wizard step: installHooks', () => {
     // Verify at least one file actually exists
     const firstFile = path.join(tmpDir, written[0]);
     assert.ok(existsSync(firstFile), `Expected file to exist: ${written[0]}`);
+    assert.ok(
+      existsSync(path.join(tmpDir, '.gearbox', 'hooks', 'markdown-eval.mjs')),
+      'Expected markdown-eval.mjs to be installed'
+    );
+    assert.ok(
+      existsSync(path.join(tmpDir, '.gearbox', 'hooks', 'prompts', 'consolidate-memory.md')),
+      'Expected consolidate-memory prompt to be installed'
+    );
   });
 
   it('second run skips already-existing files', async () => {
@@ -62,6 +73,10 @@ describe('wizard step: installHarness', () => {
     assert.ok(written.length > 0);
     const scriptsExist = existsSync(path.join(tmpDir, '.gearbox', 'scripts'));
     assert.ok(scriptsExist, 'Expected .gearbox/scripts/ to be created');
+    assert.ok(
+      existsSync(path.join(tmpDir, '.gearbox', 'scripts', 'sync-agent-config.mjs')),
+      'Expected sync-agent-config.mjs to be installed'
+    );
   });
 
   it('includes harness-config.json at .gearbox/harness-config.json', async () => {
@@ -216,6 +231,70 @@ describe('wizard step: installAdapters', () => {
   });
 });
 
+describe('wizard step: installMemoryContract', () => {
+  let tmpDir;
+  before(async () => { tmpDir = await makeTmp(); });
+  after(async () => { await rm(tmpDir, { recursive: true, force: true }); });
+
+  it('dry-run returns durable memory paths without writing files', async () => {
+    const { written, skipped } = await installMemoryContract({ cwd: tmpDir, dryRun: true });
+    assert.deepEqual(skipped, []);
+    assert.ok(written.includes(path.join('docs', 'agents', 'learning-guide.md')));
+    assert.ok(written.includes(path.join('.github', 'agents', 'decisions.md')));
+    assert.ok(written.includes(path.join('.github', 'agents', 'user-directives.md')));
+    assert.equal(existsSync(path.join(tmpDir, 'docs')), false, 'Should not create docs in dry-run');
+    assert.equal(existsSync(path.join(tmpDir, '.github')), false, 'Should not create .github in dry-run');
+  });
+
+  it('writes missing durable memory files and skips existing ones', async () => {
+    const decisionsPath = path.join(tmpDir, '.github', 'agents', 'decisions.md');
+    await mkdir(path.dirname(decisionsPath), { recursive: true });
+    await writeFile(decisionsPath, '# Existing decisions\n', 'utf8');
+
+    const { written, skipped } = await installMemoryContract({ cwd: tmpDir });
+    assert.ok(skipped.includes(path.join('.github', 'agents', 'decisions.md')));
+    assert.ok(written.includes(path.join('docs', 'agents', 'learning-guide.md')));
+    assert.ok(written.includes(path.join('.github', 'agents', 'user-directives.md')));
+
+    const learningGuide = await readFile(path.join(tmpDir, 'docs', 'agents', 'learning-guide.md'), 'utf8');
+    const userDirectives = await readFile(path.join(tmpDir, '.github', 'agents', 'user-directives.md'), 'utf8');
+    const decisions = await readFile(decisionsPath, 'utf8');
+
+    assert.match(learningGuide, /durable learning guide/i);
+    assert.match(userDirectives, /^---\n[\s\S]*\n---\n/m, 'Expected frontmatter in user directives reference doc');
+    assert.equal(decisions, '# Existing decisions\n', 'Should preserve user-edited decisions file');
+  });
+
+  it('second run skips already-existing durable memory files', async () => {
+    const { written, skipped } = await installMemoryContract({ cwd: tmpDir });
+    assert.equal(written.length, 0, 'Should write nothing on second run');
+    assert.ok(skipped.length >= 3, 'Should skip all durable memory files');
+  });
+
+  it('installs loader-safe frontmatter in durable decisions template', async () => {
+    const tmpDir2 = await makeTmp();
+    try {
+      await mkdir(path.join(tmpDir2, '.github', 'agents'), { recursive: true });
+      await writeFile(
+        path.join(tmpDir2, '.github', 'agents', 'user-directives.md'),
+        '# Existing directives\n',
+        'utf8'
+      );
+
+      const { written, skipped } = await installMemoryContract({ cwd: tmpDir2 });
+      assert.ok(written.includes(path.join('.github', 'agents', 'decisions.md')));
+      assert.ok(skipped.includes(path.join('.github', 'agents', 'user-directives.md')));
+
+      const decisions = await readFile(path.join(tmpDir2, '.github', 'agents', 'decisions.md'), 'utf8');
+      assert.match(decisions, /^---\n[\s\S]*\n---\n/m, 'Expected frontmatter in durable decisions reference doc');
+      assert.match(decisions, /disable-model-invocation:\s*true/);
+      assert.match(decisions, /user-invocable:\s*false/);
+    } finally {
+      await rm(tmpDir2, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('wizard step: generateAgentsMd', () => {
   let tmpDir;
   before(async () => { tmpDir = await makeTmp(); });
@@ -230,6 +309,9 @@ describe('wizard step: generateAgentsMd', () => {
     const content = await readFile(path.join(tmpDir, 'AGENTS.md'), 'utf8');
     assert.ok(content.includes('test-project'), 'Expected project name in AGENTS.md');
     assert.ok(content.includes('Gearbox harness'), 'Expected Gearbox harness section');
+    assert.match(content, /\[durable learning guide\]\(docs\/agents\/learning-guide\.md\)/i);
+    assert.match(content, /\[decisions log\]\(\.github\/agents\/decisions\.md\)/i);
+    assert.match(content, /\[user directives\]\(\.github\/agents\/user-directives\.md\)/i);
   });
 
   it('appends gearbox section when AGENTS.md exists without it', async () => {
@@ -244,6 +326,7 @@ describe('wizard step: generateAgentsMd', () => {
       const content = await readFile(path.join(tmpDir2, 'AGENTS.md'), 'utf8');
       assert.ok(content.includes('Existing'), 'Should preserve original content');
       assert.ok(content.includes('Gearbox harness'), 'Should append gearbox section');
+      assert.match(content, /\[durable learning guide\]\(docs\/agents\/learning-guide\.md\)/i);
     } finally {
       await rm(tmpDir2, { recursive: true, force: true });
     }

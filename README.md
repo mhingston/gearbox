@@ -6,16 +6,16 @@
 npx @mhingston5/gearbox
 ```
 
-The core value is a **session eval flywheel** — hook scripts capture what happens during every AI coding session, feed learnings back into the agent's instructions (`AGENTS.md`), and the agent gradually gets better at your specific repo over time. No cloud service, no subscription — just files checked into your repo.
+The core value is a **session eval flywheel** — hook scripts capture what happens during every AI coding session, turn that into portable runtime records and eval summaries, and give the agent better repo-specific context over time. No cloud service, no subscription — just files checked into your repo.
 
 ## What you get
 
-- 🪝 **8 hook scripts** — capture session events, run policy guards, trigger self-learning
-- 🛠 **5 harness utilities** — health scoring, docs drift detection, convention drift gate, event log
+- 🪝 **Hook runtime assets** — capture session events, run policy guards, synthesise markdown evals, and ship portable prompts
+- 🛠 **10 user-facing harness utilities and helper CLIs** — health scoring, docs drift detection, convention drift gate, event log, config sync, skill validation, and portable path helpers
 - 🎓 **33 portable skills** — domain-agnostic agent skills that work with any codebase
 - ⚡ **7 agentic workflows** — GitHub Actions for ongoing repo health automation
 - 🔌 **Platform adapters** — correct config files for 6 AI coding platforms
-- 📝 **`AGENTS.md` stub** — the living memory file your agent reads at the start of every session
+- 📝 **Durable memory contract** — `AGENTS.md` plus a learning guide and durable memory reference docs
 
 ## Requirements
 
@@ -42,9 +42,9 @@ The wizard asks which platforms you use and where to put skills, then writes eve
    npm run gearbox:health
    ```
 
-2. **Commit the generated files** — everything under `.gearbox/`, `.agents/skills/`, `AGENTS.md`, platform config files, and any generated symlinks belongs in version control:
+2. **Commit the generated files** — everything under `.gearbox/`, `.agents/skills/`, `AGENTS.md`, `.github/agents/`, `docs/agents/`, platform config files, and any generated symlinks belongs in version control:
    ```sh
-   git add .gearbox/ AGENTS.md .github/copilot/ .claude/ .agents/
+   git add .gearbox/ AGENTS.md .github/agents/ docs/agents/ .github/copilot/ .claude/ .agents/
    git add CLAUDE.md .github/copilot-instructions.md GEMINI.md  # if present
    git add .claude/skills/ .github/skills/  # if present
    git commit -m "chore: install gearbox agent harness"
@@ -60,22 +60,27 @@ The wizard asks which platforms you use and where to put skills, then writes eve
 
 ## What gets installed
 
-### `.gearbox/hooks/` — 8 hook scripts
+### `.gearbox/hooks/` — shared hook runtime assets
 
-These run at key moments during AI coding sessions. Each platform maps its native hook events to this standard set.
+These run at key moments during AI coding sessions. Each platform maps its
+native hook system to this canonical event set, then invokes the backing
+runtime asset shown below.
 
-| Hook | When it runs | What it does |
-|------|-------------|--------------|
-| `pre-tool-use.mjs` | Before every tool call | Secret scanning via gitleaks, policy guard |
-| `post-tool-use.mjs` | After every tool call | Logs tool usage to the event log |
-| `session-start.mjs` | At session start | Loads context, runs self-learning from previous sessions |
-| `session-end.mjs` | At session end | Flushes the event log, triggers session checkpoint |
-| `error-occurred.mjs` | On unhandled errors | Logs error context for post-session analysis |
-| `stop.mjs` | When the agent is stopped | Graceful shutdown, finalise event log |
-| `pre-push.mjs` | Before `git push` | Runs pre-push validation (gitleaks, branch checks) |
-| `notification.mjs` | On agent notifications | Routes notifications to the event log |
+| Hook event | Backing asset | What it does |
+|------------|---------------|--------------|
+| `sessionStart` | `self-learning.mjs sessionStart` | Loads prior context and prepares runtime state |
+| `userPromptSubmitted` | `self-learning.mjs userPromptSubmitted` | Captures the evolving task/goal for later compaction and evaluation |
+| `preToolUse` | `gitleaks-check.sh` + `policy-guard.mjs` | Secret scanning via gitleaks, policy guard |
+| `postToolUse` | `self-learning.mjs postToolUse` | Logs tool usage and updates runtime artefacts |
+| `errorOccurred` | `self-learning.mjs errorOccurred` | Logs error context for post-session analysis |
+| `preCompact` | `context-compact.mjs` | Writes compact context before a session compaction step |
+| `sessionEnd` | `self-learning.mjs sessionEnd` | Flushes the event log, writes a session record, and triggers markdown eval |
 
-### `.gearbox/scripts/` — harness utilities
+The installed asset set also includes shared implementations such as
+`self-learning.mjs`, `markdown-eval.mjs`, `context-compact.mjs`, helper shell
+scripts, and portable prompt files under `.gearbox/hooks/prompts/`.
+
+### `.gearbox/scripts/` — 10 user-facing harness utilities and helper CLIs
 
 | Script | What it does |
 |--------|-------------|
@@ -85,6 +90,13 @@ These run at key moments during AI coding sessions. Each platform maps its nativ
 | `event-log.mjs` | Append-only structured event log used by hooks for session tracing |
 | `harness-config.mjs` | Reads `harness-config.json`; single source of truth for retry limits, budget settings, and hook tuning |
 | `sync-agent-config.mjs` | Manages cross-platform symlinks (CLAUDE.md, GEMINI.md, skills dirs) for instruction compatibility |
+| `validate-skill.mjs` | Validates bundled `SKILL.md` files for frontmatter, structure, and basic safety issues |
+| `paths.mjs` | Resolves portable config/worktree roots from repo guidance, local folders, or platform defaults |
+| `normalize-error.mjs` | Normalizes unstable error text values (temp paths, GUIDs, dates, positions) for loop detection |
+| `tmpdir.mjs` | Creates or previews scoped helper temp directories under the host temp root |
+
+`common.mjs` is also installed in `.gearbox/scripts/` as a shared support module
+for these CLIs, but it is not intended to be called directly.
 
 ### `{skillsDir}/` — 33 portable skills
 
@@ -106,9 +118,14 @@ Skills are Markdown files (`SKILL.md`) that the agent reads when triggered. They
 
 See [Supported platforms](#supported-platforms) for the exact file paths written per platform.
 
-### `AGENTS.md`
+### Durable memory contract
 
-The top-level durable memory file. The agent reads this at the start of every session to understand your repo's conventions, architecture, and accumulated learnings. Starts as a stub — grows richer over time as the eval flywheel runs.
+- `AGENTS.md` — top-level durable memory for repo guardrails, architecture notes, and quick links
+- `docs/agents/learning-guide.md` — concise routing guide for where new durable learnings should live
+- `.github/agents/decisions.md` — long-lived technical or workflow decisions and invariants
+- `.github/agents/user-directives.md` — explicit user preferences that should shape future sessions
+
+`AGENTS.md` starts as a stub and links to the other files so the installed memory bootstrap is immediately navigable.
 
 ### `package.json` scripts
 
@@ -144,18 +161,20 @@ Hook scripts fire (pre-tool-use, post-tool-use, session-end, …)
     ↓
 Event log accumulates structured session data (.gearbox/hooks/.runtime/)
     ↓
-session-end hook triggers self-learning synthesis
+session-end hook writes a reusable session record
     ↓
-Learnings proposed as updates to AGENTS.md
+markdown-eval synthesises `.gearbox/hooks/.runtime/latest-eval.md`
     ↓
-Agent reads improved AGENTS.md at start of next session
+Durable learnings are consolidated into `AGENTS.md`, `.github/agents/`, and docs
+    ↓
+Agent reads improved instructions at start of next session
     ↓
 Better outcomes → more learnings → cycle continues
 ```
 
 The `pr-retrospective` agentic workflow runs an additional flywheel turn after every PR merge, mining the git history and review comments for durable patterns.
 
-`AGENTS.md` is the living memory file. Keep it in version control — it accumulates your repo's conventions, architectural decisions, and hard-won lessons in a format the agent reads directly.
+`AGENTS.md` is the living memory entry point. Keep the full durable memory contract in version control so agents can follow repo conventions, durable decisions, and explicit user preferences from session one.
 
 ## Skills reference
 

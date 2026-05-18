@@ -48,11 +48,10 @@ describe('wizard questions', () => {
     }
   });
 
-  it('defaults enable self-improvement loop', () => {
-    assert.equal(DEFAULTS.selfImprovement, true);
-  });
-
-  it('defaults enable secret scanning', () => {
-    assert.equal(DEFAULTS.secretScanning, true);
+  it('defaults only include active wizard settings', () => {
+    assert.deepEqual(
+      Object.keys(DEFAULTS).sort(),
+      ['platforms', 'skillsDir', 'workflows'].sort(),
+    );
   });
 });

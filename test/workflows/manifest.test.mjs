@@ -73,3 +73,8 @@ test('ci-health.md does not hardcode workflow .yml filenames in a table', () => 
     'ci-health.md appears to hardcode a .yml workflow filename in a table cell'
   );
 });
+
+test('consolidate-memory.md references the installed gearbox prompt asset', () => {
+  const content = readFileSync(join(workflowsDir, 'consolidate-memory.md'), 'utf8');
+  assert.match(content, /\.gearbox\/hooks\/prompts\/consolidate-memory\.md/);
+});

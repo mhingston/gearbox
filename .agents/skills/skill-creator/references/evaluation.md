@@ -78,7 +78,7 @@ For checks that can be scripted, script them instead of eyeballing them.
 ### Aggregate benchmark
 
 ```bash
-node utilities/scripts/skills/run-python.mjs --cwd .agents/skills/skill-creator   --module scripts.aggregate_benchmark   <workspace>/iteration-N   --skill-name <name>
+cd .agents/skills/skill-creator && python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>
 ```
 
 This produces `benchmark.json` and `benchmark.md` using the schemas documented in [schemas.md](schemas.md).
@@ -86,8 +86,11 @@ This produces `benchmark.json` and `benchmark.md` using the schemas documented i
 ### Launch the review viewer
 
 ```bash
-node utilities/scripts/skills/run-python.mjs   .agents/skills/skill-creator/eval-viewer/generate_review.py   <workspace>/iteration-N   --skill-name "my-skill"   --benchmark <workspace>/iteration-N/benchmark.json
+cd .agents/skills/skill-creator && python eval-viewer/generate_review.py <workspace>/iteration-N --skill-name "my-skill" --benchmark <workspace>/iteration-N/benchmark.json
 ```
+
+Use whatever Python launcher is standard in the repo (`python`, `python3`, or
+`py`).
 
 Use `--previous-workspace` for iteration 2+ comparisons. In headless environments, write a static HTML file instead; see [platform-notes.md](platform-notes.md).
 

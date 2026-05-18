@@ -1,4 +1,4 @@
-import { intro, outro, multiselect, confirm, select, spinner, isCancel, cancel } from '@clack/prompts';
+import { intro, outro, multiselect, select, spinner, isCancel, cancel } from '@clack/prompts';
 import { execFileSync } from 'node:child_process';
 import pc from 'picocolors';
 import path from 'node:path';
@@ -10,6 +10,7 @@ import { installHarness } from './steps/install-harness.mjs';
 import { installSkills } from './steps/install-skills.mjs';
 import { installWorkflows } from './steps/install-workflows.mjs';
 import { installAdapters } from './steps/install-adapters.mjs';
+import { installMemoryContract } from './steps/install-memory-contract.mjs';
 import { generateAgentsMd } from './steps/generate-agents-md.mjs';
 import { updatePackageJson } from './steps/update-package-json.mjs';
 
@@ -62,18 +63,6 @@ export async function runWizard({
     if (isCancel(platformAnswer)) { cancel('Setup cancelled.'); process.exit(0); }
     chosenPlatforms = platformAnswer;
 
-    const selfImprove = await confirm({
-      message: 'Enable self-improvement loop?',
-      initialValue: DEFAULTS.selfImprovement,
-    });
-    if (isCancel(selfImprove)) { cancel('Setup cancelled.'); process.exit(0); }
-
-    const secretScan = await confirm({
-      message: 'Enable secret scanning (gitleaks)?',
-      initialValue: DEFAULTS.secretScanning,
-    });
-    if (isCancel(secretScan)) { cancel('Setup cancelled.'); process.exit(0); }
-
     const workflowAnswer = await multiselect({
       message: 'Which workflows to install?',
       options: WORKFLOW_CHOICES,
@@ -113,6 +102,10 @@ export async function runWizard({
     {
       label: 'Configuring platform adapters',
       fn: () => installAdapters({ cwd, platforms: chosenPlatforms, dryRun }),
+    },
+    {
+      label: 'Installing durable memory files',
+      fn: () => installMemoryContract({ cwd, dryRun }),
     },
     {
       label: 'Syncing instruction files and skills',

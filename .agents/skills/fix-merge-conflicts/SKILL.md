@@ -37,10 +37,9 @@ validation → Complete operation.
 | Variable      | Description                          | Detection Priority          |
 | ------------- | ------------------------------------ | --------------------------- |
 | `PR_URL`      | GitHub PR URL or number              | 1st — Query GitHub API      |
-| `TICKET_KEY`  | Jira ticket key (e.g., PAY-1234)     | 2nd — Lookup PR from branch |
-| `BRANCH`      | Feature branch to merge              | 3rd — Use with BASE_BRANCH  |
-| `BASE_BRANCH` | Target branch (default: origin/main) | 3rd — With BRANCH           |
-| None          | Current directory context            | 4th — Check local git state |
+| `BRANCH`      | Feature branch to merge              | 2nd — Use with `BASE_BRANCH` |
+| `BASE_BRANCH` | Target branch (default: origin/main) | 2nd — With `BRANCH`         |
+| None          | Current directory context            | 3rd — Check local git state |
 
 ## Auto-Detection Logic
 
@@ -48,7 +47,7 @@ The skill determines the scenario automatically:
 
 ```bash
 # Priority 1: Check PR context
-if [ -n "$PR_URL" ] || [ -n "$TICKET_KEY" ]; then
+if [ -n "$PR_URL" ]; then
   detect_pr_conflicts
 fi
 
@@ -74,10 +73,6 @@ prompt_for_context
 detect_pr_conflicts() {
   if [ -n "$PR_URL" ]; then
     PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-  elif [ -n "$TICKET_KEY" ]; then
-    # Lookup PR from branch name
-    BRANCH_NAME="feature/${TICKET_KEY}"
-    PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' 2>/dev/null)
   fi
 
   if [ -z "$PR_NUMBER" ]; then
@@ -120,9 +115,6 @@ PowerShell 7:
 function Detect-PrConflicts {
   if ($env:PR_URL) {
     $PR_NUMBER = [regex]::Match($env:PR_URL, '(\d+)$').Groups[1].Value
-  } elseif ($env:TICKET_KEY) {
-    $BRANCH_NAME = "feature/$env:TICKET_KEY"
-    $PR_NUMBER = gh pr list --head $BRANCH_NAME --json number --jq '.[0].number' 2>$null
   }
 
   if (-not $PR_NUMBER) {
@@ -218,7 +210,7 @@ Create or reuse a worktree for the PR branch:
 
 ```bash
 PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel)")
-WORKTREE_INFO=$(node utilities/scripts/harness/paths.mjs worktree-root --project "$PROJECT_NAME" --branch "$BRANCH" --json)
+WORKTREE_INFO=$(node .gearbox/scripts/paths.mjs worktree-root --project "$PROJECT_NAME" --branch "$BRANCH" --json)
 WORKTREE_PATH=$(echo "$WORKTREE_INFO" | jq -r '.worktreePath')
 
 if [ -d "$WORKTREE_PATH" ]; then
@@ -600,7 +592,7 @@ invoke_stuck_loop_detection() {
 
 Scenario:      PR conflicts (Scenario 1)
 PR:            #1234
-Branch:        feature/PAY-5678
+Branch:        feature/update-api
 Base:          origin/main
 Files resolved: 5
 Strategy:
@@ -616,7 +608,7 @@ Push status:   ✅ Branch pushed, PR now mergeable
 ❌ Could not resolve merge conflicts
 
 Scenario:      Local rebase (Scenario 2)
-Branch:        feature/PAY-5678
+Branch:        feature/update-api
 Operation:     rebase onto origin/main
 Files with conflicts: 3
   - src/api/Core/Services/PaymentService.cs (complex logic conflict)

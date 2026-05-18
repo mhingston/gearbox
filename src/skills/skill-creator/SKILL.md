@@ -24,14 +24,11 @@ Create new skills, restructure existing skills, and verify that they are accurat
 - Validate every edited skill with:
 
 ```bash
-node utilities/scripts/harness/validate-skill.mjs <path-to-SKILL.md>
+node .gearbox/scripts/validate-skill.mjs <path-to-SKILL.md>
 ```
 
-- Run bundled Python helpers with the cross-platform launcher:
-
-```bash
-node utilities/scripts/skills/run-python.mjs --cwd .agents/skills/skill-creator <script-or-module> [args...]
-```
+- If you are working inside a repo that installed gearbox, prefer the shipped
+  validator path above over any legacy `utilities/scripts/...` path.
 
 - Description optimization relies on the `claude -p` flow available in Claude Code or Cowork. If that environment is unavailable, skip that workflow and explain why.
 

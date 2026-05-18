@@ -36,8 +36,11 @@ Write the populated HTML to a safe writable workspace, open it, and let the user
 ## 3. Run the Optimization Loop
 
 ```bash
-node utilities/scripts/skills/run-python.mjs --cwd .agents/skills/skill-creator   --module scripts.run_loop   --eval-set <path-to-trigger-eval.json>   --skill-path <path-to-skill>   --model <current-session-model-id>   --max-iterations 5   --verbose
+cd .agents/skills/skill-creator && python -m scripts.run_loop --eval-set <path-to-trigger-eval.json> --skill-path <path-to-skill> --model <current-session-model-id> --max-iterations 5 --verbose
 ```
+
+Use whatever Python launcher is standard in the repo (`python`, `python3`, or
+`py`).
 
 Use the same model family that powers the current session so the trigger test reflects the user's real environment.
 
@@ -54,7 +57,7 @@ Update the skill's frontmatter with `best_description`, then:
 
 1. show the before/after descriptions,
 2. report the score change, and
-3. re-run `validate-skill.mjs`.
+3. re-run `node .gearbox/scripts/validate-skill.mjs <path-to-SKILL.md>`.
 
 ## How Triggering Actually Works
 
