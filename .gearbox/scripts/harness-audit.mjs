@@ -38,6 +38,19 @@ const ADAPTER_PATHS = [
   '.pi/extensions/gearbox-harness.ts',
 ];
 
+const DURABLE_MEMORY_LINKS = [
+  'docs/agents/learning-guide.md',
+  '.github/agents/decisions.md',
+  '.github/agents/user-directives.md',
+];
+
+const SCOPE_SKILLS = [
+  'brainstorming',
+  'writing-plans',
+  'test-driven-development',
+  'verification-before-completion',
+];
+
 // ── Utilities ────────────────────────────────────────────────────────────────
 async function pathExists(filePath) {
   try {
@@ -65,6 +78,184 @@ async function walkFiles(dir, predicate) {
   }
   await visit(dir);
   return results;
+}
+
+async function readPackageJson(root) {
+  const packageJsonPath = path.join(root, 'package.json');
+  if (!(await pathExists(packageJsonPath))) {
+    return { packageJson: null, error: 'package.json not found' };
+  }
+
+  try {
+    const content = await fs.readFile(packageJsonPath, 'utf8');
+    return { packageJson: JSON.parse(content), error: null };
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return { packageJson: null, error: 'invalid package.json' };
+    }
+
+    throw error;
+  }
+}
+
+function summarizeChecks(checks) {
+  return {
+    score: checks.filter((check) => check.ok).length,
+    max: checks.length,
+    checks: checks.map((check) => check.message),
+  };
+}
+
+async function buildSubsystems(root) {
+  const agentsPath = path.join(root, 'AGENTS.md');
+  const learningGuidePath = path.join(root, 'docs', 'agents', 'learning-guide.md');
+  const decisionsPath = path.join(root, '.github', 'agents', 'decisions.md');
+  const userDirectivesPath = path.join(root, '.github', 'agents', 'user-directives.md');
+  const progressPath = path.join(root, 'docs', 'agents', 'progress.md');
+  const handoffPath = path.join(root, 'docs', 'agents', 'session-handoff.md');
+  const cleanStatePath = path.join(root, 'docs', 'agents', 'clean-state-checklist.md');
+  const runtimeDir = path.join(root, '.gearbox', 'hooks', '.runtime');
+  const recordsDir = path.join(runtimeDir, 'records');
+
+  const agentsExists = await pathExists(agentsPath);
+  const agentsContent = agentsExists ? await fs.readFile(agentsPath, 'utf8') : '';
+  const durableLinksPresent = DURABLE_MEMORY_LINKS.every((link) => agentsContent.includes(link));
+  const { packageJson, error: packageJsonError } = await readPackageJson(root);
+  const packageScripts = packageJson?.scripts ?? {};
+  const runtimeRecordFiles = await walkFiles(recordsDir, () => true);
+
+  const instructions = summarizeChecks([
+    {
+      ok: agentsExists,
+      message: agentsExists ? 'AGENTS.md present' : 'AGENTS.md not found',
+    },
+    {
+      ok: await pathExists(learningGuidePath),
+      message: (await pathExists(learningGuidePath))
+        ? 'docs/agents/learning-guide.md present'
+        : 'docs/agents/learning-guide.md not found',
+    },
+    {
+      ok: await pathExists(decisionsPath),
+      message: (await pathExists(decisionsPath))
+        ? '.github/agents/decisions.md present'
+        : '.github/agents/decisions.md not found',
+    },
+    {
+      ok: await pathExists(userDirectivesPath),
+      message: (await pathExists(userDirectivesPath))
+        ? '.github/agents/user-directives.md present'
+        : '.github/agents/user-directives.md not found',
+    },
+    {
+      ok: durableLinksPresent,
+      message: durableLinksPresent
+        ? 'AGENTS.md links durable memory references'
+        : 'AGENTS.md missing one or more durable memory links',
+    },
+  ]);
+
+  const state = summarizeChecks([
+    {
+      ok: await pathExists(progressPath),
+      message: (await pathExists(progressPath))
+        ? 'docs/agents/progress.md present'
+        : 'docs/agents/progress.md not found',
+    },
+    {
+      ok: await pathExists(handoffPath),
+      message: (await pathExists(handoffPath))
+        ? 'docs/agents/session-handoff.md present'
+        : 'docs/agents/session-handoff.md not found',
+    },
+    {
+      ok: await pathExists(cleanStatePath),
+      message: (await pathExists(cleanStatePath))
+        ? 'docs/agents/clean-state-checklist.md present'
+        : 'docs/agents/clean-state-checklist.md not found',
+    },
+  ]);
+
+  const verification = summarizeChecks([
+    {
+      ok: typeof packageScripts['gearbox:health'] === 'string',
+      message:
+        packageJsonError === null
+          ? typeof packageScripts['gearbox:health'] === 'string'
+            ? 'package.json includes gearbox:health'
+            : 'package.json missing gearbox:health'
+          : `${packageJsonError} — cannot inspect gearbox:health`,
+    },
+    {
+      ok: typeof packageScripts['gearbox:audit'] === 'string',
+      message:
+        packageJsonError === null
+          ? typeof packageScripts['gearbox:audit'] === 'string'
+            ? 'package.json includes gearbox:audit'
+            : 'package.json missing gearbox:audit'
+          : `${packageJsonError} — cannot inspect gearbox:audit`,
+    },
+    {
+      ok: typeof packageScripts['gearbox:check-docs'] === 'string',
+      message:
+        packageJsonError === null
+          ? typeof packageScripts['gearbox:check-docs'] === 'string'
+            ? 'package.json includes gearbox:check-docs'
+            : 'package.json missing gearbox:check-docs'
+          : `${packageJsonError} — cannot inspect gearbox:check-docs`,
+    },
+  ]);
+
+  const scope = summarizeChecks(
+    await Promise.all(
+      SCOPE_SKILLS.map(async (skill) => {
+        const skillEntryPath = path.join(root, '.agents', 'skills', skill, 'SKILL.md');
+        const ok = await pathExists(skillEntryPath);
+        return {
+          ok,
+          message: ok
+            ? `.agents/skills/${skill}/SKILL.md present`
+            : `.agents/skills/${skill}/SKILL.md not found`,
+        };
+      }),
+    ),
+  );
+
+  const lifecycle = summarizeChecks([
+    {
+      ok: await pathExists(path.join(runtimeDir, 'current-checkpoint.json')),
+      message: (await pathExists(path.join(runtimeDir, 'current-checkpoint.json')))
+        ? '.gearbox/hooks/.runtime/current-checkpoint.json present'
+        : '.gearbox/hooks/.runtime/current-checkpoint.json not found',
+    },
+    {
+      ok: await pathExists(path.join(runtimeDir, 'latest-eval.md')),
+      message: (await pathExists(path.join(runtimeDir, 'latest-eval.md')))
+        ? '.gearbox/hooks/.runtime/latest-eval.md present'
+        : '.gearbox/hooks/.runtime/latest-eval.md not found',
+    },
+    {
+      ok: await pathExists(path.join(runtimeDir, 'last-session.md')),
+      message: (await pathExists(path.join(runtimeDir, 'last-session.md')))
+        ? '.gearbox/hooks/.runtime/last-session.md present'
+        : '.gearbox/hooks/.runtime/last-session.md not found',
+    },
+    {
+      ok: runtimeRecordFiles.length > 0,
+      message:
+        runtimeRecordFiles.length > 0
+          ? `.gearbox/hooks/.runtime/records contains ${runtimeRecordFiles.length} record(s)`
+          : '.gearbox/hooks/.runtime/records contains no session records',
+    },
+  ]);
+
+  return {
+    instructions,
+    state,
+    verification,
+    scope,
+    lifecycle,
+  };
 }
 
 function compareVersions(a, b) {
@@ -190,6 +381,7 @@ export async function runHealthCheck(root = process.cwd()) {
     max_score: maxScore,
     pass: totalScore >= 70,
     categories,
+    subsystems: await buildSubsystems(root),
   };
 }
 

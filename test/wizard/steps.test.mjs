@@ -240,6 +240,9 @@ describe('wizard step: installMemoryContract', () => {
     const { written, skipped } = await installMemoryContract({ cwd: tmpDir, dryRun: true });
     assert.deepEqual(skipped, []);
     assert.ok(written.includes(path.join('docs', 'agents', 'learning-guide.md')));
+    assert.ok(written.includes(path.join('docs', 'agents', 'progress.md')));
+    assert.ok(written.includes(path.join('docs', 'agents', 'session-handoff.md')));
+    assert.ok(written.includes(path.join('docs', 'agents', 'clean-state-checklist.md')));
     assert.ok(written.includes(path.join('.github', 'agents', 'decisions.md')));
     assert.ok(written.includes(path.join('.github', 'agents', 'user-directives.md')));
     assert.equal(existsSync(path.join(tmpDir, 'docs')), false, 'Should not create docs in dry-run');
@@ -254,13 +257,23 @@ describe('wizard step: installMemoryContract', () => {
     const { written, skipped } = await installMemoryContract({ cwd: tmpDir });
     assert.ok(skipped.includes(path.join('.github', 'agents', 'decisions.md')));
     assert.ok(written.includes(path.join('docs', 'agents', 'learning-guide.md')));
+    assert.ok(written.includes(path.join('docs', 'agents', 'progress.md')));
+    assert.ok(written.includes(path.join('docs', 'agents', 'session-handoff.md')));
+    assert.ok(written.includes(path.join('docs', 'agents', 'clean-state-checklist.md')));
     assert.ok(written.includes(path.join('.github', 'agents', 'user-directives.md')));
 
     const learningGuide = await readFile(path.join(tmpDir, 'docs', 'agents', 'learning-guide.md'), 'utf8');
+    const progressLog = await readFile(path.join(tmpDir, 'docs', 'agents', 'progress.md'), 'utf8');
+    const sessionHandoff = await readFile(path.join(tmpDir, 'docs', 'agents', 'session-handoff.md'), 'utf8');
+    const cleanStateChecklist = await readFile(path.join(tmpDir, 'docs', 'agents', 'clean-state-checklist.md'), 'utf8');
     const userDirectives = await readFile(path.join(tmpDir, '.github', 'agents', 'user-directives.md'), 'utf8');
     const decisions = await readFile(decisionsPath, 'utf8');
 
     assert.match(learningGuide, /durable learning guide/i);
+    assert.match(learningGuide, /progress\.md/i);
+    assert.match(progressLog, /session progress/i);
+    assert.match(sessionHandoff, /session handoff/i);
+    assert.match(cleanStateChecklist, /clean-state checklist/i);
     assert.match(userDirectives, /^---\n[\s\S]*\n---\n/m, 'Expected frontmatter in user directives reference doc');
     assert.equal(decisions, '# Existing decisions\n', 'Should preserve user-edited decisions file');
   });
@@ -310,6 +323,9 @@ describe('wizard step: generateAgentsMd', () => {
     assert.ok(content.includes('test-project'), 'Expected project name in AGENTS.md');
     assert.ok(content.includes('Gearbox harness'), 'Expected Gearbox harness section');
     assert.match(content, /\[durable learning guide\]\(docs\/agents\/learning-guide\.md\)/i);
+    assert.match(content, /\[progress log\]\(docs\/agents\/progress\.md\)/i);
+    assert.match(content, /\[session handoff\]\(docs\/agents\/session-handoff\.md\)/i);
+    assert.match(content, /\[clean-state checklist\]\(docs\/agents\/clean-state-checklist\.md\)/i);
     assert.match(content, /\[decisions log\]\(\.github\/agents\/decisions\.md\)/i);
     assert.match(content, /\[user directives\]\(\.github\/agents\/user-directives\.md\)/i);
   });
@@ -327,6 +343,101 @@ describe('wizard step: generateAgentsMd', () => {
       assert.ok(content.includes('Existing'), 'Should preserve original content');
       assert.ok(content.includes('Gearbox harness'), 'Should append gearbox section');
       assert.match(content, /\[durable learning guide\]\(docs\/agents\/learning-guide\.md\)/i);
+      assert.match(content, /\[progress log\]\(docs\/agents\/progress\.md\)/i);
+      assert.match(content, /\[session handoff\]\(docs\/agents\/session-handoff\.md\)/i);
+      assert.match(content, /\[clean-state checklist\]\(docs\/agents\/clean-state-checklist\.md\)/i);
+    } finally {
+      await rm(tmpDir2, { recursive: true, force: true });
+    }
+  });
+
+  it('updates an existing gearbox section when new session continuity links are missing', async () => {
+    const tmpDir2 = await makeTmp();
+    try {
+      await writeFile(
+        path.join(tmpDir2, 'AGENTS.md'),
+        [
+          '# Existing',
+          '',
+          '## Gearbox harness',
+          '',
+          'This repo uses [gearbox](https://github.com/mark-hingston/gearbox) for AI agent harness setup.',
+          'Run `node .gearbox/scripts/harness-audit.mjs health` to check harness health.',
+          '',
+          'Durable memory lives in:',
+          '',
+          '- `AGENTS.md` — top-level repo guardrails and conventions',
+          '- [durable learning guide](docs/agents/learning-guide.md) — where new lessons should go',
+          '- [decisions log](.github/agents/decisions.md) — long-lived decisions and invariants',
+          '- [user directives](.github/agents/user-directives.md) — explicit user preferences to honour',
+          '',
+          '## Architecture guardrails',
+          '',
+          'Keep edits small.',
+          '',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const { written, skipped } = await generateAgentsMd({
+        cwd: tmpDir2,
+        projectName: 'my-project',
+      });
+
+      assert.ok(written.includes('AGENTS.md'));
+      assert.equal(skipped.length, 0);
+
+      const content = await readFile(path.join(tmpDir2, 'AGENTS.md'), 'utf8');
+      assert.match(content, /\[progress log\]\(docs\/agents\/progress\.md\)/i);
+      assert.match(content, /\[session handoff\]\(docs\/agents\/session-handoff\.md\)/i);
+      assert.match(content, /\[clean-state checklist\]\(docs\/agents\/clean-state-checklist\.md\)/i);
+      assert.match(content, /## Architecture guardrails/);
+    } finally {
+      await rm(tmpDir2, { recursive: true, force: true });
+    }
+  });
+
+  it('does not duplicate bare session continuity links when only some are already present', async () => {
+    const tmpDir2 = await makeTmp();
+    try {
+      await writeFile(
+        path.join(tmpDir2, 'AGENTS.md'),
+        [
+          '# Existing',
+          '',
+          '## Gearbox harness',
+          '',
+          'This repo uses [gearbox](https://github.com/mark-hingston/gearbox) for AI agent harness setup.',
+          'Run `node .gearbox/scripts/harness-audit.mjs health` to check harness health.',
+          '',
+          'Durable memory lives in:',
+          '',
+          '- `AGENTS.md` — top-level repo guardrails and conventions',
+          '- [durable learning guide](docs/agents/learning-guide.md) — where new lessons should go',
+          '- [decisions log](.github/agents/decisions.md) — long-lived decisions and invariants',
+          '- [user directives](.github/agents/user-directives.md) — explicit user preferences to honour',
+          '',
+          'Session continuity docs live in `docs/agents/`:',
+          '',
+          '- [progress log](docs/agents/progress.md)',
+          '- [session handoff](docs/agents/session-handoff.md)',
+          '',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const { written, skipped } = await generateAgentsMd({
+        cwd: tmpDir2,
+        projectName: 'my-project',
+      });
+
+      assert.ok(written.includes('AGENTS.md'));
+      assert.equal(skipped.length, 0);
+
+      const content = await readFile(path.join(tmpDir2, 'AGENTS.md'), 'utf8');
+      assert.equal((content.match(/\[progress log\]\(docs\/agents\/progress\.md\)/gi) ?? []).length, 1);
+      assert.equal((content.match(/\[session handoff\]\(docs\/agents\/session-handoff\.md\)/gi) ?? []).length, 1);
+      assert.equal((content.match(/\[clean-state checklist\]\(docs\/agents\/clean-state-checklist\.md\)/gi) ?? []).length, 1);
     } finally {
       await rm(tmpDir2, { recursive: true, force: true });
     }
@@ -335,7 +446,31 @@ describe('wizard step: generateAgentsMd', () => {
   it('skips AGENTS.md when gearbox section already present', async () => {
     const tmpDir2 = await makeTmp();
     try {
-      await writeFile(path.join(tmpDir2, 'AGENTS.md'), '# Existing\n\n## Gearbox harness\n\nAlready here.\n');
+      await writeFile(
+        path.join(tmpDir2, 'AGENTS.md'),
+        [
+          '# Existing',
+          '',
+          '## Gearbox harness',
+          '',
+          'This repo uses [gearbox](https://github.com/mark-hingston/gearbox) for AI agent harness setup.',
+          'Run `node .gearbox/scripts/harness-audit.mjs health` to check harness health.',
+          '',
+          'Durable memory lives in:',
+          '',
+          '- `AGENTS.md` — top-level repo guardrails and conventions',
+          '- [durable learning guide](docs/agents/learning-guide.md) — where new lessons should go',
+          '- [decisions log](.github/agents/decisions.md) — long-lived decisions and invariants',
+          '- [user directives](.github/agents/user-directives.md) — explicit user preferences to honour',
+          '',
+          'Session continuity docs live in `docs/agents/`:',
+          '',
+          '- [progress log](docs/agents/progress.md)',
+          '- [session handoff](docs/agents/session-handoff.md)',
+          '- [clean-state checklist](docs/agents/clean-state-checklist.md)',
+          '',
+        ].join('\n'),
+      );
       const { written, skipped } = await generateAgentsMd({
         cwd: tmpDir2,
         projectName: 'my-project',

@@ -8,6 +8,9 @@ Use this guide when deciding where a new learning should live.
 - `.github/agents/decisions.md` — accepted long-lived decisions and invariants
 - `.github/agents/user-directives.md` — explicit user preferences to honour
 - `docs/` — deeper reference material, runbooks, and troubleshooting notes
+- `docs/agents/progress.md` — ongoing session progress for multi-session work
+- `docs/agents/session-handoff.md` — restart context for the next session
+- `docs/agents/clean-state-checklist.md` — wrap-up checklist before handing work over
 
 ## Promotion checklist
 

@@ -84,7 +84,7 @@ scripts, and portable prompt files under `.gearbox/hooks/prompts/`.
 
 | Script | What it does |
 |--------|-------------|
-| `harness-audit.mjs` | Health scoring (0–100) across 5 dimensions; also runs preflight checks before harness operations |
+| `harness-audit.mjs` | Health scoring (0–100) across 5 install dimensions, plus an advisory 5-subsystem harness rubric; also runs preflight checks before harness operations |
 | `docs-drift-check.mjs` | Detects documentation that has gone stale relative to code changes |
 | `convention-drift-gate.mjs` | Enforces coding conventions; runs as a post-merge CI gate |
 | `event-log.mjs` | Append-only structured event log used by hooks for session tracing |
@@ -122,17 +122,22 @@ See [Supported platforms](#supported-platforms) for the exact file paths written
 
 - `AGENTS.md` — top-level durable memory for repo guardrails, architecture notes, and quick links
 - `docs/agents/learning-guide.md` — concise routing guide for where new durable learnings should live
+- `docs/agents/progress.md` — lightweight running log for work that spans multiple sessions
+- `docs/agents/session-handoff.md` — restart context for the next session or reviewer
+- `docs/agents/clean-state-checklist.md` — wrap-up checklist before you hand off or pause work
 - `.github/agents/decisions.md` — long-lived technical or workflow decisions and invariants
 - `.github/agents/user-directives.md` — explicit user preferences that should shape future sessions
 
 `AGENTS.md` starts as a stub and links to the other files so the installed memory bootstrap is immediately navigable.
+
+For the smallest useful multi-session pack, start with `AGENTS.md`, `docs/agents/learning-guide.md`, `docs/agents/progress.md`, `docs/agents/session-handoff.md`, and `docs/agents/clean-state-checklist.md`.
 
 ### `package.json` scripts
 
 Three utility scripts are added to your `package.json`:
 
 ```sh
-npm run gearbox:health      # Run harness health check (0-100 score)
+npm run gearbox:health      # Run harness health check (0-100 score + advisory subsystem rubric)
 npm run gearbox:audit       # Run preflight checks
 npm run gearbox:check-docs  # Check for documentation drift
 ```

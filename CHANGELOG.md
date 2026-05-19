@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0 — Session continuity and advisory audit rubric
+
+### Added
+- Session continuity templates for `docs/agents/progress.md`, `docs/agents/session-handoff.md`, and `docs/agents/clean-state-checklist.md`
+- An advisory 5-subsystem harness rubric in `harness-audit.mjs` covering instructions, state, verification, scope, and lifecycle
+
+### Changed
+- `AGENTS.md` generation now links the session continuity docs and upgrades older Gearbox sections in place when those links are missing
+- `harness-audit` now reports install health separately from the advisory subsystem rubric without changing the existing top-level score contract
+- README now documents the minimal multi-session pack and the richer `gearbox:health` output
+
+### Fixed
+- Prevented duplicate session continuity links when upgrading existing `AGENTS.md` files that already contained bare links
+- Kept the checked-in `.gearbox/scripts/harness-audit.mjs` sample asset in sync with the source implementation
+
 ## 0.2.0 — Reusable bootstrap hardening
 
 ### Added
